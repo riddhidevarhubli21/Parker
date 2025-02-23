@@ -5,11 +5,13 @@ import {
   Button, 
   StyleSheet, 
   ActivityIndicator, 
+  TouchableOpacity,
   Text,
   Keyboard
 } from 'react-native';
 import * as Location from 'expo-location';
 import Map from '../Map'
+import Autocomplete from 'react-native-autocomplete-input';
 
 const MAPBOX_API_KEY = 'pk.eyJ1IjoicmhlYW5hZ29yaSIsImEiOiJjbTdnbXpsencwMDZqMnBxNnJyeWdqbXRkIn0.AYSfmpmLZujFXHct0IEOlA';
 
@@ -17,11 +19,12 @@ export default function Index() {
 
   const [currentCoords, setCurrentCoords] = useState(null); // the user's current coordinates
   const [locationEnabled, setLocationEnabled] = useState(false); // whether user has allowed location services
-
+  const [originCoords, setOriginCoords] = useState(null);
   const [destinationInput, setDestinationInput] = useState('');
   const [destinationCoords, setDestinationCoords] = useState(null); 
-
+  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [destinationQuery, setDestinationQuery] = useState(true);
   
   useEffect(() => {
     // prompt user for permission to allow location tracking 
@@ -56,6 +59,47 @@ export default function Index() {
     })();
   }, []);
 
+  const fetchSuggestions = async (query) => {
+    if(query.length < 3){
+      setSuggestions([]);
+      return;
+    }
+    try{
+      const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_API_KEY}`);
+      const data = await response.json();
+      if(data.features){
+        setSuggestions(data.features);
+      }
+    } catch(error){
+      console.error("Error fetching suggestions :", error);
+    }
+  };
+
+  const handleDestinationQueryChange = (text) => {
+    setDestinationQuery(text);
+    fetchSuggestions(text);
+  }
+
+  const handleSuggestionSelect = (item) => {
+    setDestinationQuery(item.place_name);
+    setSuggestions([]);
+    const coords = item.center;
+    const dest = { latitude: coords[1], longitude: coords[0]};
+    setDestinationCoords(dest);
+    if(originCoords) {
+      fetchRoute(originCoords, dest);
+    } 
+    Keyboard.dismiss();
+  };
+
+  const handleSubmitDestination = () => {
+    if(suggestions.length > 0){
+      handleSuggestionSelect(suggestions[0]);
+    } else {
+      console.error('No suggestions available for this query');
+    }
+    Keyboard.dismiss();
+  }
   // check if user has entered a valid destination 
   const handleSetDestination = async () => {
     Keyboard.dismiss();
@@ -99,9 +143,31 @@ export default function Index() {
           value={destinationInput}
           onChangeText={setDestinationInput}
         />
-        <Button title="Set Destination" onPress={handleSetDestination} />
+      </View>
+      <View style={styles.inputContainer}>
+        <Autocomplete
+          data={suggestions}
+          defaultValue={destinationQuery}
+          onChangeText={handleDestinationQueryChange}
+          placeholder="Enter destination"
+          placeholderTextColor="#888"
+          onSubmitEditing={handleSubmitDestination} 
+          flatListProps={{
+            keyExtractor: (item) => item.id,
+            renderItem: ({ item }) => (
+              <TouchableOpacity onPress={() => handleSuggestionSelect(item)}>
+                <Text style={styles.itemText}>{item.place_name}</Text>
+              </TouchableOpacity>
+            ),
+          }}
+          containerStyle={styles.autocompleteContainer}
+          inputContainerStyle={styles.autocompleteInputContainer}
+          listStyle={styles.autocompleteList}
+        />
       </View>
     </View>
+
+    
   );
 }
   
@@ -133,4 +199,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  autocompleteContainer: {
+    width: '100%', // Use the full available width
+  },
+  // Style for the input container (the text box itself)
+  autocompleteInputContainer: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    paddingHorizontal: 12, // Increase horizontal padding for more space
+    height: 45, // Increase height for a larger text box
+  },
+  // Style for the suggestions list
+  autocompleteList: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    marginTop: 5,
+    maxHeight: 200, // Limit maximum height so it doesn't extend too far
+  },
+  itemText: {
+    padding: 10,
+    fontSize: 16,
+  }
 });
