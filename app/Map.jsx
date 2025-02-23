@@ -75,7 +75,7 @@ export default function Map( {currentCoords, dest} ) {
     if (!filters.showNoParking && restrictionType.includes("No Parking")) return null;
     if (!filters.showLoadingZone && restrictionType.includes("LZ")) return null;
     if (!filters.showTwoHour && restrictionType.includes("2HR")) return null;
-    if (!filters.showTwoHour && (restrictionType.includes("Disabled") || restrictionType.includes("Veteran"))) return null;
+    if (!filters.showDIS_VET && restrictionType.includes("DIS/VET")) return null;
 
     const midPointIndex = Math.floor(coordinates.length / 2);
     const midPoint = coordinates[midPointIndex] || coordinates[0];
