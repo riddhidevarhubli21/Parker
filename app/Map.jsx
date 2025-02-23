@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View } from 'react-native';
 import MapView, { Polyline, Marker } from 'react-native-maps'; 
 import parkingRestrictionsData from "./data/Street_Parking_Restrictions.json";
+import FiltersContext from './FiltersContext';
 // import { Gyroscope } from 'react-native-sensors';
 
 const MAPBOX_API_KEY = 'pk.eyJ1IjoicmhlYW5hZ29yaSIsImEiOiJjbTdnbXpsencwMDZqMnBxNnJyeWdqbXRkIn0.AYSfmpmLZujFXHct0IEOlA';
 
 export default function Map( {currentCoords, dest} ) {
   const [routeCoords, setRouteCoords] = useState([]); // represents segments along route path 
+  const {filters, setFilters} = useContext(FiltersContext);
 
   // fetches route directions from Mapbox API
   const fetchRoute = async (currentCoords, dest) => {
@@ -50,7 +52,7 @@ export default function Map( {currentCoords, dest} ) {
   const parkingTypeColors = {};
   let colorIndex = 0;
 
-  // TODO: app crashes when plotting too many lines at once
+  // TODO: app crashes when plotting too many features at once, load 2000 for now
   const parkingRestrictionsLines = parkingRestrictionsData.features
   .slice(0, 2000)
   .map((feature, index) => {
@@ -70,7 +72,10 @@ export default function Map( {currentCoords, dest} ) {
 
     const color = parkingTypeColors[restrictionType];
 
-    if (restrictionType.includes("No Parking")) return null;
+    if (!filters.showNoParking && restrictionType.includes("No Parking")) return null;
+    if (!filters.showLoadingZone && restrictionType.includes("LZ")) return null;
+    if (!filters.showTwoHour && restrictionType.includes("2HR")) return null;
+    if (!filters.showTwoHour && (restrictionType.includes("Disabled") || restrictionType.includes("Veteran"))) return null;
 
     const midPointIndex = Math.floor(coordinates.length / 2);
     const midPoint = coordinates[midPointIndex] || coordinates[0];

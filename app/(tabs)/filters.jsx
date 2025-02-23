@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
+import FiltersContext from '../FiltersContext';
 
 export default function Filters() {
-  const [filters, setFilters] = useState({
-    showTwoHour: true,
-    showLoadingZone: true,
-    showNoParking: true,
-    showDIS_VET: true,
-  });
+
+  const {filters, setFilters} = useContext(FiltersContext);
 
   const toggleSwitch = (key) => {
     setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
