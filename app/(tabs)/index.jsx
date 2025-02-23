@@ -5,10 +5,11 @@ import {
   Button, 
   StyleSheet, 
   ActivityIndicator, 
-  Text
+  Text,
+  Keyboard
 } from 'react-native';
 import * as Location from 'expo-location';
-import Map from './Map'
+import Map from '../Map'
 
 const MAPBOX_API_KEY = 'pk.eyJ1IjoicmhlYW5hZ29yaSIsImEiOiJjbTdnbXpsencwMDZqMnBxNnJyeWdqbXRkIn0.AYSfmpmLZujFXHct0IEOlA';
 
@@ -46,10 +47,6 @@ export default function Index() {
             longitudeDelta: 0.01,
           };
           setCurrentCoords(newLocation);
-          // If destination is set, update the route as you move
-          if (destinationCoords) {
-            fetchRoute(newLocation, destinationCoords);
-          }
           setLoading(false);
         }
       );
@@ -61,6 +58,7 @@ export default function Index() {
 
   // check if user has entered a valid destination 
   const handleSetDestination = async () => {
+    Keyboard.dismiss();
     if (!destinationInput.trim()) return;
     try {
       const resp = await fetch(

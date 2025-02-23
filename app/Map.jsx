@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
-// Mapping imports 
-import MapView, { Polyline, Marker } from 'react-native-maps'; // Native platform map 
+import MapView, { Polyline, Marker } from 'react-native-maps'; 
 import parkingRestrictionsData from "./data/Street_Parking_Restrictions.json";
+// import { Gyroscope } from 'react-native-sensors';
 
 const MAPBOX_API_KEY = 'pk.eyJ1IjoicmhlYW5hZ29yaSIsImEiOiJjbTdnbXpsencwMDZqMnBxNnJyeWdqbXRkIn0.AYSfmpmLZujFXHct0IEOlA';
 
 export default function Map( {currentCoords, dest} ) {
-  console.log(dest)
-
   const [routeCoords, setRouteCoords] = useState([]); // represents segments along route path 
 
-  // Function to fetch route directions from Mapbox Directions API
+  // fetches route directions from Mapbox API
   const fetchRoute = async (currentCoords, dest) => {
     try {
       // fetch route from Mapbox
@@ -33,23 +31,69 @@ export default function Map( {currentCoords, dest} ) {
     }
   }
 
+  // recalculate best route when dest or current location changes
   useEffect(() => {
     if (dest && currentCoords) {
       fetchRoute(currentCoords, dest);
     }
   }, [currentCoords, dest])
 
+  const generateColor = (index) => {
+    const colors = [
+      "#0000FF", "#FFD700", "#FF8C00", "#8B008B", "#800080",
+      "#006400", "#013220", "#8B0000", "#555555", "#222222",
+      "#FF4500", "#1E90FF", "#32CD32", "#FF1493", "#00CED1",
+    ];
+    return colors[index % colors.length]; 
+  };
+
+  const parkingTypeColors = {};
+  let colorIndex = 0;
+
   // TODO: app crashes when plotting too many lines at once
-  const parkingRestrictionsLines = parkingRestrictionsData.features.slice(0, 2000).map((feature, index) => {
+  const parkingRestrictionsLines = parkingRestrictionsData.features
+  .slice(0, 2000)
+  .map((feature, index) => {
+    if (!feature.properties || !feature.geometry || !feature.geometry.coordinates) return null;
+
     const coordinates = feature.geometry.coordinates.map(coord => ({
       latitude: coord[1],
       longitude: coord[0],
     }));
 
+    const restrictionType = feature.properties.Type || "Unknown";
+    const restrictionText = feature.properties.Restr_txt_full || "No Info Available"; 
+
+    if (!parkingTypeColors[restrictionType]) {
+      parkingTypeColors[restrictionType] = generateColor(colorIndex++);
+    }
+
+    const color = parkingTypeColors[restrictionType];
+
+    if (restrictionType.includes("No Parking")) return null;
+
+    const midPointIndex = Math.floor(coordinates.length / 2);
+    const midPoint = coordinates[midPointIndex] || coordinates[0];
+
     return (
-      <Polyline key={index} coordinates={coordinates} strokeColor="red" strokeWidth={3} />
+      <View key={index}>
+        <Polyline
+          key={`line-${index}`}
+          coordinates={coordinates}
+          strokeColor={color}
+          strokeWidth={4} 
+          zIndex={100} 
+        />
+        <Marker
+          key={`marker-${index}`}
+          coordinate={midPoint}
+          title={restrictionText}
+          pinColor = {color}
+        />
+      </View>
     );
   });
+
 
   return (
     <View style={{ flex: 1 }}>
@@ -59,7 +103,7 @@ export default function Map( {currentCoords, dest} ) {
         showsUserLocation={true}
       >
         {parkingRestrictionsLines}
-        {dest && <Marker coordinate={dest} title="Destination" pinColor="blue" />}
+        {dest && <Marker coordinate={dest} title="Destination" pinColor="white" />}
         {routeCoords.length > 0 && 
           <Polyline // traces line over route
             coordinates={routeCoords} 

@@ -6,5 +6,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ]
+, "app/(tabs)/filters.jsx", "app/(tabs)/_layout.jsx", "app/(tabs)/index.jsx"  ]
 }

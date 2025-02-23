@@ -1,6 +1,6 @@
 // app/_layout.jsx
 import React from 'react';
-import { Stack } from 'expo-router';
+import { Stack } from 'expo-router/stack';
 import { useFonts } from 'expo-font';
 import { View, ActivityIndicator } from 'react-native';
 
@@ -32,7 +32,9 @@ export default function Layout() {
           backgroundColor: '#EAE7EA',
         },
       }}
-    />
+    >
+      <Stack.Screen name="(tabs)" />
+    </Stack>
   );
 }
 
